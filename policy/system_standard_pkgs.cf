@@ -2,7 +2,7 @@
 # A snippet bundle that installs packages on Ubuntu and Redhat systems
 
 # Since this bundle uses definitions from the COPBL, we include it:
-body common control
+body file control
 {
 	inputs => { "$(sys.masterdir)/lib/3.6/packages.cf" };
 }
