@@ -48,13 +48,13 @@ bundle agent system_standard_pkgs
 				package_version => "2.2.22-1ubuntu1.7"
 			;
 
-		# Redhat httpd needs to be below version 2.4.45 
+		# Redhat php-gd needs to be below version 5.3.3-38
 		redhat::
-			"httpd"
+			"php-gd"
 				package_policy => "addupdate",
 				package_method => yum,
 				package_select => "<=",
-				package_version => "2.3.45"
+				package_version => "5.3.3-38.el6"
 				# NOTE: cfengine will not uninstall a higher 
 				# version, it will only mark this promise as
 				# not kept.
