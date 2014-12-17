@@ -1,0 +1,16 @@
+#!/bin/sh
+# MOTD file for cfengine status report
+
+# Local system status:
+echo 'Managed by CFEngine3'
+
+{{#classes.am_policy_hub}}
+echo 'I am a policy hub!'
+{{/classes.am_policy_hub}}
+{{^classes.am_policy_hub}}
+echo 'Bootstrapped to {{vars.sys.policy_hub}}'
+{{/classes.am_policy_hub}}
+
+echo 'Last cfengine run: {{vars.sys.date}}'
+
+
