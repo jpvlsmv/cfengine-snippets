@@ -1,45 +1,63 @@
-#!/usr/bin/env cf-agent -I -b system_standard_pkgs -f
+#!/usr/local/sbin/cf-agent -bsystem_standard_pkgs
 # A snippet bundle that installs packages on Ubuntu and Redhat systems
+
+# Since this bundle uses definitions from the COPBL, we include it:
+body common control
+{
+	inputs => { "$(sys.masterdir)/lib/3.6/packages.cf" };
+}
+
 bundle agent system_standard_pkgs
 {
 	meta:
-		# With this tag, placing this file in $masterfiles/services/autorun/ will enforce this policy automatically
+		# With this tag, placing this file in 
+		# $masterfiles/services/autorun/ will enforce this policy 
+		# automatically
 		"tags" slist => { "autorun" };
 
 	vars:
 		# Example standard packages on all systems
 		any::
 			"allpkgs" slist => {
-							"sysstat", 		# I don't care about the version, give me the latest.
-							"flex>=2.5.3", 	# Give me at least version 2.5.3 of flex
-						}; 
+					"sysstat",
+					# Everybody gets sysstat installed
+					}; 
 		
-		# Ubuntu systems get the apache2 package
-		ubuntu::
-			"pkgs" slist => {
-						@(allpkgs),					# Get all of the above allpkgs, plus:
-						"apache2>=2.2.22-1ubuntu1",	# apache2 at this version or higher
-						"git=1:1.7.9.5-1",			# A specific version of git.  
-						# Note that cfengine will only install this version, or upgrade to this version.  It will not downgrade an already-installed higher version.  Be careful.
-						 };
-		
-		# Redhat systems get httpd instead of apache2
-		redhat::
-			"pkgs" slist => {
-							@(allpkgs),
-							"httpd>=2.2.3.31" # Redhat systems get the httpd (apache2) package at this version or higher
-							};
 	packages:
 		# Debian-like systems use apt to install packages
 		debian::
-			"$(pkgs)"
+			"$(allpkgs)"
 				package_policy => "addupdate",
 				package_method => apt;
 				
 		# Redhat-like systems use yum to install packages
 		redhat::
-			"$(pkgs)"
+			"$(allpkgs)"
 				package_policy => "addupdate",
 				package_method => yum;
-		
+
+		# All of our boxes are web servers
+
+		# On ubuntu, install 2.2.22 or later
+		ubuntu::
+			# At least version 2.2.22-1ubuntu1.7 of apache2
+			"apache2"
+				package_policy => "addupdate",
+				package_method => apt,
+				package_select => ">=",
+				package_version => "2.2.22-1ubuntu1.7"
+			;
+
+		# Redhat httpd needs to be below version 2.4.45 
+		redhat::
+			"httpd"
+				package_policy => "addupdate",
+				package_method => yum,
+				package_select => "<=",
+				package_version => "2.3.45"
+				# NOTE: cfengine will not uninstall a higher 
+				# version, it will only mark this promise as
+				# not kept.
+			;
+
 }
