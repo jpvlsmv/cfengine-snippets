@@ -1,0 +1,45 @@
+#!/usr/bin/env cf-agent -I -b system_standard_pkgs -f
+# A snippet bundle that installs packages on Ubuntu and Redhat systems
+bundle agent system_standard_pkgs
+{
+	meta:
+		# With this tag, placing this file in $masterfiles/services/autorun/ will enforce this policy automatically
+		"tags" slist => { "autorun" };
+
+	vars:
+		# Example standard packages on all systems
+		any::
+			"allpkgs" slist => {
+							"sysstat", 		# I don't care about the version, give me the latest.
+							"flex>=2.5.3", 	# Give me at least version 2.5.3 of flex
+						}; 
+		
+		# Ubuntu systems get the apache2 package
+		ubuntu::
+			"pkgs" slist => {
+						@(allpkgs),					# Get all of the above allpkgs, plus:
+						"apache2>=2.2.22-1ubuntu1",	# apache2 at this version or higher
+						"git=1:1.7.9.5-1",			# A specific version of git.  
+						# Note that cfengine will only install this version, or upgrade to this version.  It will not downgrade an already-installed higher version.  Be careful.
+						 };
+		
+		# Redhat systems get httpd instead of apache2
+		redhat::
+			"pkgs" slist => {
+							@(allpkgs),
+							"httpd>=2.2.3.31" # Redhat systems get the httpd (apache2) package at this version or higher
+							};
+	packages:
+		# Debian-like systems use apt to install packages
+		debian::
+			"$(pkgs)"
+				package_policy => "addupdate",
+				package_method => apt;
+				
+		# Redhat-like systems use yum to install packages
+		redhat::
+			"$(pkgs)"
+				package_policy => "addupdate",
+				package_method => yum;
+		
+}
