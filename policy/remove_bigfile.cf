@@ -1,0 +1,57 @@
+#!/usr/local/sbin/cf-agent -bremove_bigfile
+# A snippet to remove a particular (log) file if it gets too big
+
+bundle agent remove_bigfile
+{
+	meta:
+		# With this tag, placing this file in
+		# $masterfiles/services/autorun/ will enfoce this policy
+		# automatically
+		"tags" slist => { "autorun" };
+
+	vars:
+		# We can promise about one file:
+		"runlog_sizelimit" string => "80M";
+
+		# Or iterate through a list:
+		"file_sizelimit[/tmp/file1]" string => "1M";
+		"file_sizelimit[/etc/motd]"  string => "50k";
+
+		# Get the iteration variables:
+		"files_to_limit" slist => getindices("file_sizelimit");
+
+	files:
+        	# Truncate this file if it gets bigger than 80MB.
+	        # CFEngine does not appear to be taking care of
+	        # rotating it, and emptying it seems safe.
+	        #
+	        "/var/cfengine/cf3.$(sys.uqhost).runlog"
+		        file_select     => toobig($(runlog_sizelimit)),
+		        transformer     => "/bin/cp /dev/null $(this.promiser)",
+			classes         => u_ifrepaired(runlog_truncated);
+
+		
+		# Iterate through the files, limiting the size as we go
+		"$(files_to_limit)"
+			file_select => toobig($(file_sizelimit[$(files_to_limit)])),
+		        transformer     => "/bin/cp /dev/null $(this.promiser)";
+
+	reports:
+		runlog_truncated::
+			"Truncated cf3.$(sys.uqhost).runlog";
+}
+
+# The Cfengine stdlib has a size_range(from,to) body that could be used here
+# file_select => size_range("80M",inf),
+body file_select toobig(size) 
+{
+	search_size => irange($(size),inf);
+	file_result => "size";
+}
+
+# The cfengine stdlib has this body defined without the u_ prefix.  But to
+# avoid importing stdlib, I redefine it here:
+body classes u_ifrepaired(x)
+{
+  promise_repaired => { "$(x)" };
+}
