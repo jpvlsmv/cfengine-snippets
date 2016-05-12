@@ -1,0 +1,52 @@
+#!/usr/local/sbin/cf-agent -bmain
+# An example of a command that gets run once per system lifecycle
+# Note that it will run _successfully_ once.  Failures will be retried
+
+bundle agent main {
+	vars:
+		# unique identifier for this flag
+		"flag_id"    string => "$(this.filename).$(this.promise_linenumber)";
+		
+		# The command to run once:
+		"thecommand" string => "echo runmeonce ok && /bin/true";
+
+		# For testing, this command will always fail:
+		# "thecommand" string => "echo runmeonce failed && /bin/false";
+
+	classes:
+		# Looks for a particular file in /etc (for persistance)
+		"has_been_done" expression => fileexists("/etc/flag.$(flag_id)");
+
+	commands:
+		# I need to run a command if it has never been run before
+		!has_been_done::
+		"$(thecommand)" 
+			classes => if_ok("doneit"), 
+			contain => in_shell;
+
+	files:
+		doneit::
+		"/etc/flag.$(flag_id)" create=>"true";
+
+	reports:
+		# Let me know if it has been done before
+		has_been_done:: "Previously done";
+
+		# Report if it worked this time
+		doneit:: "done this time";
+
+		# If it hadn't been done, but didn't this time
+		!previous.!doneit:: "Failed to do it this time";
+}
+
+# Body copied from stdlib, remove if stdlib is an input
+body classes if_ok(x) {
+	promise_repaired => { "$(x)" };
+	promise_kept => { "$(x)" };
+}
+
+# Body copied from stdlib, remove if stdlib is an input
+body contain in_shell
+{
+      useshell => "true"; # canonical "useshell" but this is backwards-compatible
+}
