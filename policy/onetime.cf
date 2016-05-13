@@ -36,7 +36,7 @@ bundle agent main {
 		doneit:: "done this time";
 
 		# If it hadn't been done, but didn't this time
-		!previous.!doneit:: "Failed to do it this time";
+		!has_been_done.!doneit:: "Failed to do it this time";
 }
 
 # Body copied from stdlib, remove if stdlib is an input
