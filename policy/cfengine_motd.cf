@@ -13,34 +13,15 @@ bundle agent cfengine_motd
 		# On Redhat, the file is /etc/motd
 		"/etc/motd"
 			create => "true",
-			edit_line => insert_cfengine_details;
+			edit_line => append_if_no_line("This system is managed by cfengine.");
 
 		ubuntu::
 		# On ubuntu, all scripts in /etc/update-motd.d/ are run
 		"/etc/update-motd.d/60cfengine_motd"
 			create => "true",
-			perms => mode_755,
-			edit_defaults => empty_entire_file_nobackup,
+			perms => m("0755"), # or "a+rx,u+w,o-w,g-w"
+			edit_defaults => empty,
 			edit_template => "$(this.promise_dirname)/../templates/cfengine_motd.mustache",
 			template_method => "mustache";
 }
-
-bundle edit_line insert_cfengine_details
-# This would normally be done through the stdlib append_if_no_line() body
-{
-	insert_lines:
-		"This system is managed by cfengine." ;
-}
-
-body edit_defaults empty_entire_file_nobackup
-# This would normally be done through the stdlib empty() body
-{
-	empty_file_before_editing => "true";
-	edit_backup => "false";
-}
-
-body perms mode_755
-# This would normally be done through the stdlib m("0755") body 
-{
-	mode => "0755";
-}
+body file control { inputs => { "$(sys.libdir)/stdlib.cf" }; }
