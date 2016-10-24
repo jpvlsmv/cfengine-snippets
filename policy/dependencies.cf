@@ -1,0 +1,23 @@
+#!/var/cfengine/bin/cf-agent -vbmain
+bundle agent main {
+  packages:
+      "apache2"
+        handle => "install_apache_pkg",
+        policy => "present",
+        package_module => apt_get,
+        version => "latest";
+        
+  files:
+      "/var/tomcat/webapps/mycoolwebapp1.jar"
+        handle => "webapp1_jar_copy",
+        copy_from => rcp("/deploy/mycoolwebapp1.jar", $(sys.policy_hub));
+
+      "/etc/httpd/sites.availabe/webapp1.conf"
+        owner => "webappdeveloper",      # Warning: This implicitly depends on the users: promise below.
+        depends_on => { "install_apache_pkg", "webapp1_jar_copy" };  # Explicit dependencies are better.
+  users:
+      "webappdeveloper"
+        policy => "present",
+        password => hashed_password("$6$the/string/youd/find/in/shadow");
+}
+body file control { inputs => {"$(sys.libdir)/stdlib.cf";}
